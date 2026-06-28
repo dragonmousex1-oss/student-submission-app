@@ -11,22 +11,27 @@ async function callGoogleAPI(action, data = null) {
   if (!isGoogleMode()) return null;
   try {
     let url = CONFIG.GOOGLE_SCRIPT_URL;
-    let options = {};
+    
     if (data) {
-      // POST request
-      options = {
+      // POST request - Google Apps Script needs no custom headers for CORS
+      url += '?action=' + action;
+      const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: action, ...data })
-      };
+        body: JSON.stringify(data),
+        redirect: 'follow'
+      });
+      const result = await response.json();
+      return result;
     } else {
       // GET request
       url += '?action=' + action;
-      options = { method: 'GET' };
+      const response = await fetch(url, { 
+        method: 'GET',
+        redirect: 'follow'
+      });
+      const result = await response.json();
+      return result;
     }
-    const response = await fetch(url, { ...options, redirect: 'follow' });
-    const result = await response.json();
-    return result;
   } catch (error) {
     console.error('Google Sheets Error:', error);
     showToast('เชื่อมต่อ Google Sheets ไม่ได้ ใช้ข้อมูลในเครื่องแทน', 'error');
