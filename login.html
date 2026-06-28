@@ -62,15 +62,22 @@
           <label><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 14l9-5-9-5-9 5 9 5z"/></svg> ระดับชั้น</label>
           <select class="form-control" id="login-student-level" required>
             <option value="">เลือก</option>
-            <option value="ป.1">ป.1</option><option value="ป.2">ป.2</option><option value="ป.3">ป.3</option>
-            <option value="ป.4">ป.4</option><option value="ป.5">ป.5</option><option value="ป.6">ป.6</option>
-            <option value="ม.1">ม.1</option><option value="ม.2">ม.2</option><option value="ม.3">ม.3</option>
-            <option value="ม.4">ม.4</option><option value="ม.5">ม.5</option><option value="ม.6">ม.6</option>
+            <option value="ม.1">ม.1</option>
+            <option value="ม.3">ม.3</option>
+            <option value="ม.4">ม.4</option>
+            <option value="ม.5">ม.5</option>
+            <option value="ม.6">ม.6</option>
           </select>
         </div>
         <div class="form-group">
           <label><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3"/></svg> ห้อง</label>
-          <input type="text" class="form-control" id="login-student-room" placeholder="ห้อง" required>
+          <select class="form-control" id="login-student-room" required>
+            <option value="">เลือก</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="หญิง">หญิง (ปอเนาะ)</option>
+            <option value="ชาย">ชาย (ปอเนาะ)</option>
+          </select>
         </div>
       </div>
       <button type="submit" class="btn btn-primary btn-login">

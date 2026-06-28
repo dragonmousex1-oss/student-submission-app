@@ -83,10 +83,11 @@
       <div class="filters" style="margin-top:1rem;">
         <select class="form-control" id="filter-level" onchange="filterAssignments()">
           <option value="">ทุกระดับชั้น</option>
-          <option value="ป.1">ป.1</option><option value="ป.2">ป.2</option><option value="ป.3">ป.3</option>
-          <option value="ป.4">ป.4</option><option value="ป.5">ป.5</option><option value="ป.6">ป.6</option>
-          <option value="ม.1">ม.1</option><option value="ม.2">ม.2</option><option value="ม.3">ม.3</option>
-          <option value="ม.4">ม.4</option><option value="ม.5">ม.5</option><option value="ม.6">ม.6</option>
+          <option value="ม.1">ม.1</option>
+          <option value="ม.3">ม.3</option>
+          <option value="ม.4">ม.4</option>
+          <option value="ม.5">ม.5</option>
+          <option value="ม.6">ม.6</option>
         </select>
         <select class="form-control" id="filter-subject" onchange="filterAssignments()"><option value="">ทุกวิชา</option></select>
         <select class="form-control" id="filter-room" onchange="filterAssignments()"><option value="">ทุกห้อง</option></select>
@@ -124,17 +125,39 @@
       <form id="assignment-form" onsubmit="createAssignment(event)">
         <div class="form-group"><label>ชื่องาน *</label><input type="text" class="form-control" id="assignment-title" placeholder="เช่น สร้างเว็บไซต์ส่วนตัว..." required></div>
         <div class="form-group"><label>รายละเอียดงาน</label><textarea class="form-control" id="assignment-desc" placeholder="อธิบายรายละเอียดงานที่ต้องทำ..."></textarea></div>
-        <div class="form-group"><label>วิชา *</label><input type="text" class="form-control" id="assignment-subject" placeholder="เช่น เทคโนโลยี" value="เทคโนโลยี" required></div>
-        <div class="form-group"><label>ระดับชั้น *</label>
-          <select class="form-control" id="assignment-level" required>
-            <option value="">-- เลือกระดับชั้น --</option>
-            <option value="ป.1">ป.1</option><option value="ป.2">ป.2</option><option value="ป.3">ป.3</option>
-            <option value="ป.4">ป.4</option><option value="ป.5">ป.5</option><option value="ป.6">ป.6</option>
-            <option value="ม.1">ม.1</option><option value="ม.2">ม.2</option><option value="ม.3">ม.3</option>
-            <option value="ม.4">ม.4</option><option value="ม.5">ม.5</option><option value="ม.6">ม.6</option>
+        <div class="form-group"><label>วิชา *</label>
+          <select class="form-control" id="assignment-subject" required>
+            <option value="">-- เลือกวิชา --</option>
+            <option value="โปรแกรมตารางงาน">โปรแกรมตารางงาน</option>
+            <option value="เทคโนโลยี (วิทยาการคำนวณ)">เทคโนโลยี (วิทยาการคำนวณ)</option>
+            <option value="ปอเนาะอินเตอร์เทค">ปอเนาะอินเตอร์เทค</option>
           </select>
         </div>
-        <div class="form-group"><label>ห้อง *</label><input type="text" class="form-control" id="assignment-room" placeholder="เช่น 1, 2, 3" required></div>
+        <div class="form-group"><label>ระดับชั้น/ห้อง *</label>
+          <select class="form-control" id="assignment-level-room" onchange="updateRoomFromSelection()" required>
+            <option value="">-- เลือกระดับชั้น/ห้อง --</option>
+            <optgroup label="โปรแกรมตารางงาน">
+              <option value="ม.3|4">ม.3/4</option>
+              <option value="ม.3|5">ม.3/5</option>
+            </optgroup>
+            <optgroup label="เทคโนโลยี (วิทยาการคำนวณ)">
+              <option value="ม.1|4">ม.1/4</option>
+              <option value="ม.4|4">ม.4/4</option>
+              <option value="ม.4|5">ม.4/5</option>
+              <option value="ม.5|4">ม.5/4</option>
+              <option value="ม.5|5">ม.5/5</option>
+              <option value="ม.6|4">ม.6/4</option>
+              <option value="ม.6|5">ม.6/5</option>
+            </optgroup>
+            <optgroup label="ปอเนาะอินเตอร์เทค">
+              <option value="ม.5|หญิง">ม.5 (นักเรียนหญิง)</option>
+              <option value="ม.6|หญิง">ม.6 (นักเรียนหญิง)</option>
+              <option value="ม.6|ชาย">ม.6 (นักเรียนชาย)</option>
+            </optgroup>
+          </select>
+        </div>
+        <input type="hidden" id="assignment-level">
+        <input type="hidden" id="assignment-room">
         <div class="form-group"><label>กำหนดส่ง</label><input type="date" class="form-control" id="assignment-deadline"></div>
         <div style="display:flex;gap:1rem;margin-top:1.5rem;">
           <button type="submit" class="btn btn-primary" style="flex:1;">สร้างงาน</button>

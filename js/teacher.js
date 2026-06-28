@@ -20,11 +20,21 @@ function switchTab(tab) {
   if (tab === 'submissions') { renderSubmissions(); populateSubmissionFilters(); }
 }
 
-function openCreateModal() { document.getElementById('create-modal').classList.add('active'); document.getElementById('assignment-form').reset(); document.getElementById('assignment-subject').value = 'เทคโนโลยี'; }
+function openCreateModal() { document.getElementById('create-modal').classList.add('active'); document.getElementById('assignment-form').reset(); }
 function closeCreateModal() { document.getElementById('create-modal').classList.remove('active'); }
+
+function updateRoomFromSelection() {
+  const val = document.getElementById('assignment-level-room').value;
+  if (val) {
+    const parts = val.split('|');
+    document.getElementById('assignment-level').value = parts[0];
+    document.getElementById('assignment-room').value = parts[1];
+  }
+}
 
 function createAssignment(e) {
   e.preventDefault();
+  updateRoomFromSelection();
   const assignment = {
     id: generateId(),
     title: document.getElementById('assignment-title').value.trim(),
@@ -35,6 +45,7 @@ function createAssignment(e) {
     deadline: document.getElementById('assignment-deadline').value,
     createdAt: new Date().toISOString()
   };
+  if (!assignment.level || !assignment.room) { showToast('กรุณาเลือกระดับชั้น/ห้อง', 'error'); return; }
   const assignments = getAssignments();
   assignments.unshift(assignment);
   saveAssignments(assignments);
