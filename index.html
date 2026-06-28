@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบส่งงานออนไลน์ | โรงเรียนสันติวิทยา</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+        <path d="M20 9v6"/>
+      </svg>
+      ระบบส่งงานออนไลน์
+    </div>
+    <div class="nav-links">
+      <a href="login.html" class="btn btn-sm" style="background: rgba(255,255,255,0.2); color: white;">เข้าสู่ระบบ</a>
+    </div>
+  </nav>
+
+  <div class="landing-container">
+    <div class="landing-badge">โรงเรียนสันติวิทยา จังหวัดกระบี่</div>
+    <h1>ระบบส่งงานออนไลน์</h1>
+    <p class="landing-subtitle">รายวิชาเทคโนโลยี โดย <strong>ครูธีรพงษ์ เขาทอง</strong></p>
+    <p class="landing-desc">ส่งงาน ตรวจงาน และจัดการผลงานนักเรียนได้ง่ายๆ ในที่เดียว<br>รองรับการส่งลิงก์ รูปภาพ PDF และวิดีโอ</p>
+    
+    <div class="role-cards">
+      <a href="login.html" class="role-card teacher" onclick="sessionStorage.setItem('login_role','teacher')">
+        <div class="icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <h3>สำหรับครู</h3>
+        <p>สร้างหัวข้องาน กำหนดวิชา ระดับชั้น และตรวจผลงานนักเรียน</p>
+      </a>
+      <a href="login.html" class="role-card student" onclick="sessionStorage.setItem('login_role','student')">
+        <div class="icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+            <line x1="8" y1="7" x2="16" y2="7"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+        </div>
+        <h3>สำหรับนักเรียน</h3>
+        <p>เลือกงานที่ต้องส่ง อัพโหลดลิงก์ รูปภาพ หรือวิดีโอได้เลย</p>
+      </a>
+    </div>
+
+    <div class="features-section">
+      <div class="feature">
+        <div class="feature-icon">📋</div>
+        <h4>สร้างงานง่าย</h4>
+        <p>ครูสร้างหัวข้องานพร้อมกำหนดระดับชั้น วิชา และห้อง</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📤</div>
+        <h4>ส่งงานสะดวก</h4>
+        <p>นักเรียนส่งลิงก์ รูป PDF หรือวิดีโอ ได้ทุกที่ทุกเวลา</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">✅</div>
+        <h4>ตรวจงานรวดเร็ว</h4>
+        <p>ครูตรวจงานและให้คะแนนพร้อมความคิดเห็นได้ทันที</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="landing-footer">
+    <p>&copy; 2567 ระบบส่งงานออนไลน์ | โรงเรียนสันติวิทยา จังหวัดกระบี่ | ครูธีรพงษ์ เขาทอง</p>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

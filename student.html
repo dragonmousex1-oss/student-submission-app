@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ส่งงาน | ระบบส่งงานออนไลน์</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 14l9-5-9-5-9 5 9 5z"/>
+        <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+        <path d="M20 9v6"/>
+      </svg>
+      ระบบส่งงานออนไลน์
+    </div>
+    <div class="nav-links">
+      <span class="nav-user" id="nav-student-name"></span>
+      <button class="btn btn-sm btn-logout" onclick="logout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        ออกจากระบบ
+      </button>
+    </div>
+  </nav>
+
+
+  <div class="container">
+    <div class="student-info-banner">
+      <div class="student-avatar">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+      </div>
+      <div class="student-details">
+        <h3 id="display-student-name"></h3>
+        <p id="display-student-info"></p>
+      </div>
+    </div>
+
+    <div class="page-header"><h1>งานที่ต้องส่ง</h1><p>เลือกงานแล้วกดส่งผลงานของคุณ</p></div>
+
+    <div id="student-assignments" class="assignments-grid"></div>
+    <div id="student-empty" class="empty-state" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      <h3>ยังไม่มีงาน</h3><p>ยังไม่มีงานที่มอบหมายสำหรับห้องของคุณในตอนนี้</p>
+    </div>
+  </div>
+
+
+  <!-- Submission Modal -->
+  <div class="modal-overlay" id="submission-modal">
+    <div class="modal">
+      <div class="modal-header"><h2>ส่งงาน</h2><button class="modal-close" onclick="closeSubmissionModal()">&times;</button></div>
+      <div id="submission-assignment-info" style="margin-bottom:1.5rem;padding:1rem;background:var(--bg);border-radius:var(--radius-sm);">
+        <h4 id="sub-assignment-title"></h4>
+        <p id="sub-assignment-desc" style="color:var(--text-secondary);font-size:0.9rem;margin-top:0.25rem;"></p>
+      </div>
+      <form id="submission-form" onsubmit="submitWork(event)">
+        <input type="hidden" id="sub-assignment-id">
+        <div class="form-group"><label>ประเภทการส่ง *</label>
+          <select class="form-control" id="submission-type" onchange="toggleSubmissionType()" required>
+            <option value="">-- เลือกประเภท --</option>
+            <option value="link">ลิงก์ (URL)</option><option value="image">รูปภาพ</option>
+            <option value="pdf">ไฟล์ PDF</option><option value="video">วิดีโอ</option><option value="text">ข้อความ</option>
+          </select>
+        </div>
+        <div class="form-group" id="input-link" style="display:none;">
+          <label>ลิงก์ URL</label>
+          <input type="url" class="form-control" id="submission-link" placeholder="https://...">
+          <small style="color:var(--text-secondary);">วางลิงก์ Google Drive, YouTube หรือเว็บไซต์อื่นๆ</small>
+        </div>
+        <div class="form-group" id="input-file" style="display:none;">
+          <label>อัพโหลดไฟล์</label>
+          <div class="file-upload-area" id="file-drop-area" onclick="document.getElementById('file-input').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <p>คลิกเพื่อเลือกไฟล์ หรือลากมาวางที่นี่</p>
+            <p class="file-types">รองรับ: รูปภาพ (JPG, PNG), PDF, วิดีโอ (MP4)</p>
+          </div>
+          <input type="file" id="file-input" style="display:none;" accept="image/*,application/pdf,video/*" onchange="handleFileSelect(event)">
+          <div id="file-preview" style="margin-top:0.75rem;"></div>
+        </div>
+        <div class="form-group" id="input-text" style="display:none;">
+          <label>เขียนคำตอบ</label>
+          <textarea class="form-control" id="submission-text" placeholder="พิมพ์คำตอบที่นี่..." rows="5"></textarea>
+        </div>
+        <div class="form-group"><label>หมายเหตุเพิ่มเติม (ไม่บังคับ)</label>
+          <textarea class="form-control" id="submission-note" placeholder="หมายเหตุถึงครู..." rows="2"></textarea>
+        </div>
+        <div style="display:flex;gap:1rem;margin-top:1.5rem;">
+          <button type="submit" class="btn btn-success" style="flex:1;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            ส่งงาน
+          </button>
+          <button type="button" class="btn btn-outline" onclick="closeSubmissionModal()">ยกเลิก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/student.js"></script>
+  <script>
+    const session = requireAuth('student');
+    if (session) {
+      document.getElementById('nav-student-name').textContent = session.name;
+      document.getElementById('display-student-name').textContent = session.name;
+      document.getElementById('display-student-info').textContent = 
+        'เลขที่ ' + session.number + ' | ' + session.level + ' ห้อง ' + session.room;
+    }
+  </script>
+</body>
+</html>
