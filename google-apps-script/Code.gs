@@ -26,13 +26,15 @@ function handleRequest(e) {
     
     // Parse parameters from GET or POST
     if (e.postData && e.postData.contents) {
-      params = JSON.parse(e.postData.contents);
+      try {
+        params = JSON.parse(e.postData.contents);
+      } catch(err) {
+        params = {};
+      }
     }
-    if (e.parameter && e.parameter.action) {
-      params.action = e.parameter.action;
-    }
+    // Action always comes from URL parameter
+    var action = (e.parameter && e.parameter.action) ? e.parameter.action : (params.action || '');
     
-    var action = params.action || '';
     var result = {};
     
     switch(action) {
