@@ -9,28 +9,48 @@ function isGoogleMode() {
 
 // Google Apps Script ONLY works with GET requests from cross-origin websites
 // Data is sent as URL parameter (encoded JSON)
-async function callGoogleAPI(action, data = null) {
-  if (!isGoogleMode()) return null;
-  try {
+// Uses JSONP approach to bypass CORS completely
+function callGoogleAPI(action, data) {
+  if (!isGoogleMode()) return Promise.resolve(null);
+  
+  return new Promise(function(resolve) {
     var url = CONFIG.GOOGLE_SCRIPT_URL + '?action=' + encodeURIComponent(action);
     if (data) {
       url += '&data=' + encodeURIComponent(JSON.stringify(data));
     }
+    // Add callback parameter for JSONP
+    var callbackName = 'googleCallback_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+    url += '&callback=' + callbackName;
     
-    const response = await fetch(url);
-    const text = await response.text();
+    // Set timeout
+    var timeout = setTimeout(function() {
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      console.error('Google API timeout');
+      showToast('เชื่อมต่อ Google Sheets ไม่ได้ ใช้ข้อมูลในเครื่องแทน', 'error');
+      resolve(null);
+    }, 15000);
     
-    try {
-      return JSON.parse(text);
-    } catch(e) {
-      console.log('Response:', text);
-      return null;
-    }
-  } catch (error) {
-    console.error('Google Sheets Error:', error);
-    showToast('เชื่อมต่อ Google Sheets ไม่ได้ ใช้ข้อมูลในเครื่องแทน', 'error');
-    return null;
-  }
+    // Define callback
+    window[callbackName] = function(result) {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      resolve(result);
+    };
+    
+    // Create script tag
+    var script = document.createElement('script');
+    script.src = url;
+    script.onerror = function() {
+      clearTimeout(timeout);
+      delete window[callbackName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      showToast('เชื่อมต่อ Google Sheets ไม่ได้ ใช้ข้อมูลในเครื่องแทน', 'error');
+      resolve(null);
+    };
+    document.head.appendChild(script);
+  });
 }
 
 // ===== Local Storage Functions =====

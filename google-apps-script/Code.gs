@@ -13,6 +13,7 @@
 function doGet(e) {
   var action = e.parameter.action || '';
   var dataStr = e.parameter.data || '{}';
+  var callback = e.parameter.callback || '';
   var params = {};
   
   try {
@@ -22,9 +23,17 @@ function doGet(e) {
   }
   
   var result = route(action, params);
+  var jsonStr = JSON.stringify(result);
+  
+  // If callback provided, return JSONP
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + '(' + jsonStr + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   
   return ContentService
-    .createTextOutput(JSON.stringify(result))
+    .createTextOutput(jsonStr)
     .setMimeType(ContentService.MimeType.JSON);
 }
 
