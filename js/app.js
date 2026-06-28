@@ -7,30 +7,24 @@ function isGoogleMode() {
   return typeof CONFIG !== 'undefined' && CONFIG.USE_GOOGLE_SHEETS && CONFIG.GOOGLE_SCRIPT_URL;
 }
 
+// Google Apps Script ONLY works with GET requests from cross-origin websites
+// Data is sent as URL parameter (encoded JSON)
 async function callGoogleAPI(action, data = null) {
   if (!isGoogleMode()) return null;
   try {
-    let url = CONFIG.GOOGLE_SCRIPT_URL;
-    
+    var url = CONFIG.GOOGLE_SCRIPT_URL + '?action=' + encodeURIComponent(action);
     if (data) {
-      // POST request - Google Apps Script needs no custom headers for CORS
-      url += '?action=' + action;
-      const response = await fetch(url, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        redirect: 'follow'
-      });
-      const result = await response.json();
-      return result;
-    } else {
-      // GET request
-      url += '?action=' + action;
-      const response = await fetch(url, { 
-        method: 'GET',
-        redirect: 'follow'
-      });
-      const result = await response.json();
-      return result;
+      url += '&data=' + encodeURIComponent(JSON.stringify(data));
+    }
+    
+    const response = await fetch(url);
+    const text = await response.text();
+    
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      console.log('Response:', text);
+      return null;
     }
   } catch (error) {
     console.error('Google Sheets Error:', error);
@@ -45,71 +39,49 @@ function saveAssignmentsLocal(a) { localStorage.setItem(STORAGE_KEYS.ASSIGNMENTS
 function getSubmissionsLocal() { const d = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS); return d ? JSON.parse(d) : []; }
 function saveSubmissionsLocal(s) { localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(s)); }
 
-// ===== Unified Data Functions (used by teacher.js & student.js) =====
-// These always return data synchronously from localStorage
-// But also sync with Google Sheets in background when configured
-
+// ===== Unified Data Functions =====
 function getAssignments() { return getAssignmentsLocal(); }
 function saveAssignments(a) { saveAssignmentsLocal(a); }
 function getSubmissions() { return getSubmissionsLocal(); }
 function saveSubmissions(s) { saveSubmissionsLocal(s); }
 
-// ===== Sync Functions (call Google Sheets AND update localStorage) =====
-
+// ===== Sync Functions =====
 async function syncCreateAssignment(assignment) {
-  // Always save locally first (instant)
   const assignments = getAssignmentsLocal();
   assignments.unshift(assignment);
   saveAssignmentsLocal(assignments);
-
-  // Then sync to Google Sheets if configured
   if (isGoogleMode()) {
-    const result = await callGoogleAPI('createAssignment', assignment);
-    if (result && result.success) {
-      console.log('✅ Synced to Google Sheets:', result);
-    }
+    await callGoogleAPI('createAssignment', assignment);
   }
 }
 
 async function syncDeleteAssignment(id) {
-  // Delete locally
   let assignments = getAssignmentsLocal();
   assignments = assignments.filter(a => a.id !== id);
   saveAssignmentsLocal(assignments);
   let submissions = getSubmissionsLocal();
   submissions = submissions.filter(s => s.assignmentId !== id);
   saveSubmissionsLocal(submissions);
-
-  // Sync to Google Sheets
   if (isGoogleMode()) {
     await callGoogleAPI('deleteAssignment', { id: id });
   }
 }
 
 async function syncCreateSubmission(submission) {
-  // Save locally first
   const submissions = getSubmissionsLocal();
   submissions.unshift(submission);
   saveSubmissionsLocal(submissions);
-
-  // Sync to Google Sheets
   if (isGoogleMode()) {
-    // Don't send base64 file content to Google Sheets (too large)
-    const syncData = { ...submission };
-    if (syncData.type === 'image' || syncData.type === 'pdf' || syncData.type === 'video') {
-      if (syncData.content && syncData.content.startsWith('data:')) {
-        syncData.content = '[ไฟล์อัพโหลด - เก็บในเครื่อง]';
-      }
+    var syncData = { ...submission };
+    // Don't send large base64 files to Google Sheets
+    if (syncData.content && syncData.content.length > 500) {
+      syncData.content = '[ไฟล์ขนาดใหญ่ - เก็บในเครื่อง]';
     }
-    const result = await callGoogleAPI('createSubmission', syncData);
-    if (result && result.success) {
-      console.log('✅ Submission synced to Google Sheets');
-    }
+    await callGoogleAPI('createSubmission', syncData);
   }
 }
 
 async function syncGradeSubmission(submissionId, score, totalScore, comment) {
-  // Grade locally
   let submissions = getSubmissionsLocal();
   const index = submissions.findIndex(s => s.id === submissionId);
   if (index !== -1) {
@@ -120,58 +92,35 @@ async function syncGradeSubmission(submissionId, score, totalScore, comment) {
     submissions[index].gradedAt = new Date().toISOString();
     saveSubmissionsLocal(submissions);
   }
-
-  // Sync to Google Sheets
   if (isGoogleMode()) {
-    await callGoogleAPI('gradeSubmission', {
-      id: submissionId,
-      grade: score + '/' + totalScore,
-      feedback: comment
-    });
+    await callGoogleAPI('gradeSubmission', { id: submissionId, score: score, totalScore: totalScore, comment: comment });
   }
 }
 
-// ===== Load data from Google Sheets on page load =====
+// ===== Sync from Google Sheets on page load =====
 async function syncFromGoogleSheets() {
   if (!isGoogleMode()) return;
-
   try {
-    // Load assignments
-    const assignResult = await callGoogleAPI('getAssignments');
-    if (assignResult && assignResult.success && assignResult.data) {
-      // Merge: keep local data + add Google data that's not local
-      const localAssignments = getAssignmentsLocal();
-      const localIds = new Set(localAssignments.map(a => a.id));
-      const merged = [...localAssignments];
-      assignResult.data.forEach(a => {
-        if (!localIds.has(a.id)) merged.push(a);
-      });
-      saveAssignmentsLocal(merged);
+    var result = await callGoogleAPI('getAssignments');
+    if (result && result.success && result.data) {
+      var local = getAssignmentsLocal();
+      var localIds = new Set(local.map(a => a.id));
+      result.data.forEach(a => { if (!localIds.has(a.id)) local.push(a); });
+      saveAssignmentsLocal(local);
     }
-
-    // Load submissions
-    const subResult = await callGoogleAPI('getSubmissions');
+    var subResult = await callGoogleAPI('getSubmissions');
     if (subResult && subResult.success && subResult.data) {
-      const localSubmissions = getSubmissionsLocal();
-      const localIds = new Set(localSubmissions.map(s => s.id));
-      const merged = [...localSubmissions];
-      subResult.data.forEach(s => {
-        if (!localIds.has(s.id)) merged.push(s);
-      });
-      saveSubmissionsLocal(merged);
+      var localSub = getSubmissionsLocal();
+      var localSubIds = new Set(localSub.map(s => s.id));
+      subResult.data.forEach(s => { if (!localSubIds.has(s.id)) localSub.push(s); });
+      saveSubmissionsLocal(localSub);
     }
-
-    console.log('✅ Synced from Google Sheets');
-  } catch (error) {
-    console.error('Sync error:', error);
-  }
+  } catch (e) { console.error('Sync error:', e); }
 }
 
-// Auto-sync on page load
 document.addEventListener('DOMContentLoaded', () => {
   if (isGoogleMode()) {
     syncFromGoogleSheets().then(() => {
-      // Refresh UI after sync (if functions exist)
       if (typeof updateStats === 'function') updateStats();
       if (typeof renderAssignments === 'function') renderAssignments();
       if (typeof loadStudentAssignments === 'function') loadStudentAssignments();
