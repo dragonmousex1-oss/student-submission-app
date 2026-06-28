@@ -90,6 +90,6 @@ async function submitWork(e) {
       try { content = await fileToBase64(selectedFile); } catch(err) { showToast('เกิดข้อผิดพลาด', 'error'); return; }
   }
   const submission = { id: generateId(), assignmentId, studentName: session.name, studentNumber: session.number, level: session.level, room: session.room, type, content, note, graded: false, score: null, totalScore: null, comment: '', submittedAt: new Date().toISOString() };
-  const submissions = getSubmissions(); submissions.unshift(submission); saveSubmissions(submissions);
+  syncCreateSubmission(submission);
   closeSubmissionModal(); loadStudentAssignments(); showToast('ส่งงานสำเร็จ! 🎉');
 }

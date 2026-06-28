@@ -1,421 +1,258 @@
 /**
- * Google Apps Script - Student Submission System Backend
- * ระบบส่งงานนักเรียน (Thai Student Submission System)
- * Uses Google Sheets as database storage
+ * Google Apps Script - ระบบส่งงานออนไลน์
+ * โรงเรียนสันติวิทยา จังหวัดกระบี่
+ * ครูธีรพงษ์ เขาทอง
+ * 
+ * วิธีใช้:
+ * 1. สร้าง Google Sheets ใหม่
+ * 2. Extensions > Apps Script
+ * 3. วาง Code นี้ทั้งหมด
+ * 4. Deploy > New Deployment > Web app
+ * 5. Execute as: Me, Who has access: Anyone
+ * 6. คัดลอก URL ไปใส่ในไฟล์ js/config.js
  */
 
-// ===== Configuration =====
-const CONFIG = {
-  ASSIGNMENTS_SHEET: 'Assignments',
-  SUBMISSIONS_SHEET: 'Submissions'
-};
-
-const ASSIGNMENT_HEADERS = [
-  'id', 'title', 'subject', 'description', 'dueDate', 'maxScore', 'createdAt', 'updatedAt'
-];
-
-const SUBMISSION_HEADERS = [
-  'id', 'assignmentId', 'studentName', 'studentId', 'fileName', 'fileUrl',
-  'submittedAt', 'grade', 'feedback', 'gradedAt', 'status'
-];
-
-// ===== Initialization =====
-
-/**
- * Initialize sheets with headers if they don't exist
- */
-function initSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  // Create Assignments sheet
-  let assignmentsSheet = ss.getSheetByName(CONFIG.ASSIGNMENTS_SHEET);
-  if (!assignmentsSheet) {
-    assignmentsSheet = ss.insertSheet(CONFIG.ASSIGNMENTS_SHEET);
-    assignmentsSheet.getRange(1, 1, 1, ASSIGNMENT_HEADERS.length).setValues([ASSIGNMENT_HEADERS]);
-    assignmentsSheet.getRange(1, 1, 1, ASSIGNMENT_HEADERS.length).setFontWeight('bold');
-    assignmentsSheet.setFrozenRows(1);
-  }
-
-  // Create Submissions sheet
-  let submissionsSheet = ss.getSheetByName(CONFIG.SUBMISSIONS_SHEET);
-  if (!submissionsSheet) {
-    submissionsSheet = ss.insertSheet(CONFIG.SUBMISSIONS_SHEET);
-    submissionsSheet.getRange(1, 1, 1, SUBMISSION_HEADERS.length).setValues([SUBMISSION_HEADERS]);
-    submissionsSheet.getRange(1, 1, 1, SUBMISSION_HEADERS.length).setFontWeight('bold');
-    submissionsSheet.setFrozenRows(1);
-  }
-
-  return { success: true, message: 'Sheets initialized successfully' };
-}
-
-
-// ===== Web App Handlers =====
-
-/**
- * Handle GET requests
- */
 function doGet(e) {
-  const params = e.parameter;
-  const action = params.action || '';
-  const result = handleRequest(action, params);
-  return ContentService
-    .createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
+  return handleRequest(e);
 }
 
-/**
- * Handle POST requests
- */
 function doPost(e) {
-  let params = {};
-  try {
-    params = JSON.parse(e.postData.contents);
-  } catch (err) {
-    params = e.parameter || {};
-  }
-  const action = params.action || '';
-  const result = handleRequest(action, params);
-  return ContentService
-    .createTextOutput(JSON.stringify(result))
-    .setMimeType(ContentService.MimeType.JSON);
+  return handleRequest(e);
 }
 
-/**
- * Route requests to appropriate handler functions
- */
-function handleRequest(action, params) {
+function handleRequest(e) {
   try {
-    switch (action) {
-      case 'init':
-        return initSheets();
-
-      case 'getAssignments':
-        return getAssignments();
-
-      case 'createAssignment':
-        return createAssignment(params);
-
-      case 'deleteAssignment':
-        return deleteAssignment(params.id);
-
-      case 'getSubmissions':
-        return getSubmissions(params.assignmentId);
-
-      case 'createSubmission':
-        return createSubmission(params);
-
-      case 'gradeSubmission':
-        return gradeSubmission(params);
-
-      default:
-        return { success: false, error: 'Unknown action: ' + action };
+    var params = {};
+    
+    // Parse parameters from GET or POST
+    if (e.postData && e.postData.contents) {
+      params = JSON.parse(e.postData.contents);
     }
+    if (e.parameter && e.parameter.action) {
+      params.action = e.parameter.action;
+    }
+    
+    var action = params.action || '';
+    var result = {};
+    
+    switch(action) {
+      case 'getAssignments':
+        result = getAssignments();
+        break;
+      case 'createAssignment':
+        result = createAssignment(params);
+        break;
+      case 'deleteAssignment':
+        result = deleteAssignment(params.id);
+        break;
+      case 'getSubmissions':
+        result = getSubmissions();
+        break;
+      case 'createSubmission':
+        result = createSubmission(params);
+        break;
+      case 'gradeSubmission':
+        result = gradeSubmission(params);
+        break;
+      case 'init':
+        result = initSheets();
+        break;
+      default:
+        result = { success: false, error: 'Unknown action: ' + action };
+    }
+    
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+      
   } catch (error) {
-    return { success: false, error: error.message };
+    return ContentService
+      .createTextOutput(JSON.stringify({ success: false, error: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
+// ===== Initialize Sheets =====
+function initSheets() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  var assignSheet = ss.getSheetByName('Assignments');
+  if (!assignSheet) {
+    assignSheet = ss.insertSheet('Assignments');
+    assignSheet.appendRow(['id', 'title', 'description', 'subject', 'level', 'room', 'deadline', 'createdAt']);
+    assignSheet.getRange(1, 1, 1, 8).setFontWeight('bold').setBackground('#4f46e5').setFontColor('white');
+    assignSheet.setFrozenRows(1);
+  }
+  
+  var subSheet = ss.getSheetByName('Submissions');
+  if (!subSheet) {
+    subSheet = ss.insertSheet('Submissions');
+    subSheet.appendRow(['id', 'assignmentId', 'studentName', 'studentNumber', 'level', 'room', 'type', 'content', 'note', 'graded', 'score', 'totalScore', 'comment', 'submittedAt', 'gradedAt']);
+    subSheet.getRange(1, 1, 1, 15).setFontWeight('bold').setBackground('#059669').setFontColor('white');
+    subSheet.setFrozenRows(1);
+  }
+  
+  return { success: true, message: 'สร้าง Sheets สำเร็จ!' };
+}
 
-// ===== Assignment CRUD Functions =====
-
-/**
- * Get all assignments
- */
+// ===== Assignments =====
 function getAssignments() {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ASSIGNMENTS_SHEET);
-  if (!sheet) {
-    return { success: false, error: 'Assignments sheet not found. Please initialize first.' };
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Assignments');
+  if (!sheet) return { success: true, data: [] };
+  
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { success: true, data: [] };
+  
+  var data = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  var headers = ['id', 'title', 'description', 'subject', 'level', 'room', 'deadline', 'createdAt'];
+  var assignments = [];
+  
+  for (var i = 0; i < data.length; i++) {
+    if (!data[i][0]) continue;
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[headers[j]] = data[i][j] || '';
+    }
+    assignments.push(obj);
   }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) {
-    return { success: true, data: [] };
-  }
-
-  const data = sheet.getRange(2, 1, lastRow - 1, ASSIGNMENT_HEADERS.length).getValues();
-  const assignments = data.map(function(row) {
-    const obj = {};
-    ASSIGNMENT_HEADERS.forEach(function(header, index) {
-      obj[header] = row[index];
-    });
-    return obj;
-  });
-
-  // Sort by createdAt descending (newest first)
-  assignments.sort(function(a, b) {
-    return new Date(b.createdAt) - new Date(a.createdAt);
-  });
-
+  
+  assignments.reverse();
   return { success: true, data: assignments };
 }
 
-/**
- * Create a new assignment
- */
 function createAssignment(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ASSIGNMENTS_SHEET);
-  if (!sheet) {
-    initSheets();
-  }
-
-  const assignmentSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ASSIGNMENTS_SHEET);
-
-  const id = Utilities.getUuid();
-  const now = new Date().toISOString();
-
-  const newRow = [
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Assignments');
+  if (!sheet) { initSheets(); sheet = ss.getSheetByName('Assignments'); }
+  
+  var id = params.id || Utilities.getUuid();
+  sheet.appendRow([
     id,
     params.title || '',
-    params.subject || '',
     params.description || '',
-    params.dueDate || '',
-    params.maxScore || 100,
-    now,
-    now
-  ];
-
-  assignmentSheet.appendRow(newRow);
-
-  const assignment = {};
-  ASSIGNMENT_HEADERS.forEach(function(header, index) {
-    assignment[header] = newRow[index];
-  });
-
-  return { success: true, data: assignment, message: 'Assignment created successfully' };
+    params.subject || '',
+    params.level || '',
+    params.room || '',
+    params.deadline || '',
+    params.createdAt || new Date().toISOString()
+  ]);
+  
+  return { success: true, id: id };
 }
 
-/**
- * Delete an assignment by ID
- */
 function deleteAssignment(id) {
-  if (!id) {
-    return { success: false, error: 'Assignment ID is required' };
-  }
-
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.ASSIGNMENTS_SHEET);
-  if (!sheet) {
-    return { success: false, error: 'Assignments sheet not found' };
-  }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) {
-    return { success: false, error: 'Assignment not found' };
-  }
-
-  const data = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-  for (var i = 0; i < data.length; i++) {
+  if (!id) return { success: false, error: 'No ID' };
+  
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Assignments');
+  if (!sheet) return { success: false };
+  
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
     if (data[i][0] === id) {
-      sheet.deleteRow(i + 2); // +2 because array is 0-indexed and row 1 is headers
-
-      // Also delete related submissions
-      deleteSubmissionsByAssignment(id);
-
-      return { success: true, message: 'Assignment deleted successfully' };
+      sheet.deleteRow(i + 1);
+      break;
     }
   }
-
-  return { success: false, error: 'Assignment not found' };
-}
-
-/**
- * Delete all submissions for a given assignment
- */
-function deleteSubmissionsByAssignment(assignmentId) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SUBMISSIONS_SHEET);
-  if (!sheet) return;
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return;
-
-  // Get assignmentId column (index 1)
-  const data = sheet.getRange(2, 2, lastRow - 1, 1).getValues();
-
-  // Delete from bottom to top to preserve row indices
-  for (var i = data.length - 1; i >= 0; i--) {
-    if (data[i][0] === assignmentId) {
-      sheet.deleteRow(i + 2);
+  
+  // Delete related submissions
+  var subSheet = ss.getSheetByName('Submissions');
+  if (subSheet) {
+    var subData = subSheet.getDataRange().getValues();
+    for (var i = subData.length - 1; i >= 1; i--) {
+      if (subData[i][1] === id) {
+        subSheet.deleteRow(i + 1);
+      }
     }
   }
+  
+  return { success: true };
 }
 
-
-// ===== Submission CRUD Functions =====
-
-/**
- * Get submissions, optionally filtered by assignmentId
- */
-function getSubmissions(assignmentId) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SUBMISSIONS_SHEET);
-  if (!sheet) {
-    return { success: false, error: 'Submissions sheet not found. Please initialize first.' };
+// ===== Submissions =====
+function getSubmissions() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Submissions');
+  if (!sheet) return { success: true, data: [] };
+  
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { success: true, data: [] };
+  
+  var data = sheet.getRange(2, 1, lastRow - 1, 15).getValues();
+  var headers = ['id', 'assignmentId', 'studentName', 'studentNumber', 'level', 'room', 'type', 'content', 'note', 'graded', 'score', 'totalScore', 'comment', 'submittedAt', 'gradedAt'];
+  var submissions = [];
+  
+  for (var i = 0; i < data.length; i++) {
+    if (!data[i][0]) continue;
+    var obj = {};
+    for (var j = 0; j < headers.length; j++) {
+      obj[headers[j]] = data[i][j];
+      if (headers[j] === 'graded') {
+        obj[headers[j]] = (data[i][j] === true || data[i][j] === 'TRUE' || data[i][j] === 'true');
+      }
+    }
+    submissions.push(obj);
   }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) {
-    return { success: true, data: [] };
-  }
-
-  const data = sheet.getRange(2, 1, lastRow - 1, SUBMISSION_HEADERS.length).getValues();
-  var submissions = data.map(function(row) {
-    const obj = {};
-    SUBMISSION_HEADERS.forEach(function(header, index) {
-      obj[header] = row[index];
-    });
-    return obj;
-  });
-
-  // Filter by assignmentId if provided
-  if (assignmentId) {
-    submissions = submissions.filter(function(sub) {
-      return sub.assignmentId === assignmentId;
-    });
-  }
-
-  // Sort by submittedAt descending
-  submissions.sort(function(a, b) {
-    return new Date(b.submittedAt) - new Date(a.submittedAt);
-  });
-
+  
+  submissions.reverse();
   return { success: true, data: submissions };
 }
 
-/**
- * Create a new submission
- */
 function createSubmission(params) {
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SUBMISSIONS_SHEET);
-  if (!sheet) {
-    initSheets();
-  }
-
-  const submissionsSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SUBMISSIONS_SHEET);
-
-  if (!params.assignmentId) {
-    return { success: false, error: 'Assignment ID is required' };
-  }
-
-  if (!params.studentName) {
-    return { success: false, error: 'Student name is required' };
-  }
-
-  const id = Utilities.getUuid();
-  const now = new Date().toISOString();
-
-  const newRow = [
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Submissions');
+  if (!sheet) { initSheets(); sheet = ss.getSheetByName('Submissions'); }
+  
+  var id = params.id || Utilities.getUuid();
+  sheet.appendRow([
     id,
-    params.assignmentId,
+    params.assignmentId || '',
     params.studentName || '',
-    params.studentId || '',
-    params.fileName || '',
-    params.fileUrl || '',
-    now,
-    '',       // grade (empty initially)
-    '',       // feedback (empty initially)
-    '',       // gradedAt (empty initially)
-    'submitted'  // status
-  ];
-
-  submissionsSheet.appendRow(newRow);
-
-  const submission = {};
-  SUBMISSION_HEADERS.forEach(function(header, index) {
-    submission[header] = newRow[index];
-  });
-
-  return { success: true, data: submission, message: 'Submission created successfully' };
+    params.studentNumber || '',
+    params.level || '',
+    params.room || '',
+    params.type || '',
+    params.content || '',
+    params.note || '',
+    false,
+    '',
+    '',
+    '',
+    params.submittedAt || new Date().toISOString(),
+    ''
+  ]);
+  
+  return { success: true, id: id };
 }
 
-/**
- * Grade a submission
- */
 function gradeSubmission(params) {
-  if (!params.id) {
-    return { success: false, error: 'Submission ID is required' };
-  }
-
-  if (params.grade === undefined || params.grade === null || params.grade === '') {
-    return { success: false, error: 'Grade is required' };
-  }
-
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.SUBMISSIONS_SHEET);
-  if (!sheet) {
-    return { success: false, error: 'Submissions sheet not found' };
-  }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) {
-    return { success: false, error: 'Submission not found' };
-  }
-
-  const data = sheet.getRange(2, 1, lastRow - 1, SUBMISSION_HEADERS.length).getValues();
-
-  for (var i = 0; i < data.length; i++) {
+  if (!params.id) return { success: false, error: 'No submission ID' };
+  
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Submissions');
+  if (!sheet) return { success: false };
+  
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
     if (data[i][0] === params.id) {
-      const rowIndex = i + 2; // +2 for 0-index + header row
-      const now = new Date().toISOString();
-
-      // Update grade (column 8), feedback (column 9), gradedAt (column 10), status (column 11)
-      sheet.getRange(rowIndex, 8).setValue(params.grade);
-      sheet.getRange(rowIndex, 9).setValue(params.feedback || '');
-      sheet.getRange(rowIndex, 10).setValue(now);
-      sheet.getRange(rowIndex, 11).setValue('graded');
-
-      return {
-        success: true,
-        message: 'Submission graded successfully',
-        data: {
-          id: params.id,
-          grade: params.grade,
-          feedback: params.feedback || '',
-          gradedAt: now,
-          status: 'graded'
-        }
-      };
+      var row = i + 1;
+      sheet.getRange(row, 10).setValue(true);
+      sheet.getRange(row, 11).setValue(params.grade || params.score || '');
+      sheet.getRange(row, 12).setValue(params.totalScore || '');
+      sheet.getRange(row, 13).setValue(params.feedback || params.comment || '');
+      sheet.getRange(row, 15).setValue(new Date().toISOString());
+      return { success: true };
     }
   }
-
+  
   return { success: false, error: 'Submission not found' };
 }
 
-
 // ===== Menu =====
-
-/**
- * Add custom menu when spreadsheet opens
- */
 function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu('📚 Student Submissions')
-    .addItem('Initialize Sheets', 'initSheets')
-    .addSeparator()
-    .addItem('View All Assignments', 'showAssignmentsSummary')
-    .addItem('View All Submissions', 'showSubmissionsSummary')
+  SpreadsheetApp.getUi()
+    .createMenu('ระบบส่งงาน')
+    .addItem('สร้าง Sheets เริ่มต้น', 'initSheets')
     .addToUi();
-}
-
-/**
- * Show assignments summary in a dialog
- */
-function showAssignmentsSummary() {
-  const result = getAssignments();
-  const count = result.data ? result.data.length : 0;
-  SpreadsheetApp.getUi().alert(
-    'Assignments Summary',
-    'Total assignments: ' + count,
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
-}
-
-/**
- * Show submissions summary in a dialog
- */
-function showSubmissionsSummary() {
-  const result = getSubmissions();
-  const count = result.data ? result.data.length : 0;
-  const graded = result.data ? result.data.filter(function(s) { return s.status === 'graded'; }).length : 0;
-  SpreadsheetApp.getUi().alert(
-    'Submissions Summary',
-    'Total submissions: ' + count + '\nGraded: ' + graded + '\nPending: ' + (count - graded),
-    SpreadsheetApp.getUi().ButtonSet.OK
-  );
 }

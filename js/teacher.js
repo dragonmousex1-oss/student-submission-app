@@ -46,9 +46,7 @@ function createAssignment(e) {
     createdAt: new Date().toISOString()
   };
   if (!assignment.level || !assignment.room) { showToast('กรุณาเลือกระดับชั้น/ห้อง', 'error'); return; }
-  const assignments = getAssignments();
-  assignments.unshift(assignment);
-  saveAssignments(assignments);
+  syncCreateAssignment(assignment);
   closeCreateModal(); renderAssignments(); updateStats(); populateFilters();
   showToast('สร้างงานสำเร็จ!');
 }
@@ -68,8 +66,7 @@ function renderAssignments(filteredData = null) {
 
 function deleteAssignment(id) {
   if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบงานนี้?')) return;
-  let assignments = getAssignments(); assignments = assignments.filter(a => a.id !== id); saveAssignments(assignments);
-  let submissions = getSubmissions(); submissions = submissions.filter(s => s.assignmentId !== id); saveSubmissions(submissions);
+  syncDeleteAssignment(id);
   renderAssignments(); updateStats(); populateFilters(); showToast('ลบงานสำเร็จ');
 }
 
@@ -150,13 +147,6 @@ function submitGrade(e) {
   const score = document.getElementById('grade-score').value;
   const totalScore = document.getElementById('grade-total').value;
   const comment = document.getElementById('grade-comment').value.trim();
-  let submissions = getSubmissions();
-  const index = submissions.findIndex(s => s.id === submissionId);
-  if (index !== -1) {
-    submissions[index].graded = true; submissions[index].score = score;
-    submissions[index].totalScore = totalScore; submissions[index].comment = comment;
-    submissions[index].gradedAt = new Date().toISOString();
-    saveSubmissions(submissions);
-  }
+  syncGradeSubmission(submissionId, score, totalScore, comment);
   closeGradeModal(); filterSubmissions(); updateStats(); showToast('ให้คะแนนสำเร็จ!');
 }
